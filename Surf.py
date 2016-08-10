@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 '''
-Uses SURF to match two images.
+Uses SURF to match two images. Count the match area.
 
 Based on the sample code from opencv:
   samples/python2/find_obj.py
@@ -47,28 +47,47 @@ def filter_matches(kp1, kp2, matches, ratio = 0.75):
 # Match Diplaying
 ###############################################################################
 
+def PolygonArea(corners): # use the shoelace formula
+    n = len(corners) # of corners
+    area = 0.0
+    for i in range(n):
+        j = (i + 1) % n
+        area += corners[i][0] * corners[j][1]
+        area -= corners[j][0] * corners[i][1]
+    area = abs(area) / 2.0
+    return area
+
 def explore_match(win, img1, img2, kp_pairs, status = None, H = None):
-    h1, w1 = img1.shape[:2]
-    h2, w2 = img2.shape[:2]
+    
+    green = (0, 255, 0)
+    red = (0, 0, 255)
+    white = (255, 255, 255)
+    yellow = (0,255,255)
+    blue = (255, 255, 0)
+    thick = 5
+    thin = 3
+    
+    h1, w1 = img1.shape[:2] #height and weight of img1
+    h2, w2 = img2.shape[:2] #height and weight of img2
+    #print 'h1 %d w1 %d , h2 %d w2 %d' % (h1,w1,h2,w2) #show height and weight
     vis = numpy.zeros((max(h1, h2), w1+w2), numpy.uint8)
     vis[:h1, :w1] = img1
     vis[:h2, w1:w1+w2] = img2
     vis = cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR)
-
+    
     if H is not None:
-        corners = numpy.float32([[0, 0], [w1, 0], [w1, h1], [0, h1]])
-        corners = numpy.int32( cv2.perspectiveTransform(corners.reshape(1, -1, 2), H).reshape(-1, 2) + (w1, 0) )
-        cv2.polylines(vis, [corners], True, (255, 255, 0))
-
+	corners = numpy.float32([[0, 0], [w1, 0], [w1, h1], [0, h1]])
+	corners = numpy.int32( cv2.perspectiveTransform(corners.reshape(1, -1, 2), H).reshape(-1, 2) + (w1, 0) )
+        cv2.polylines(vis, [corners], True, yellow)
+	print '%s' % corners
+	print '%s' % str(PolygonArea(corners))
+	print '%s' % str(PolygonArea(corners)/(h2*w2))
+	
     if status is None:
         status = numpy.ones(len(kp_pairs), numpy.bool_)
     p1 = numpy.int32([kpp[0].pt for kpp in kp_pairs])
     p2 = numpy.int32([kpp[1].pt for kpp in kp_pairs]) + (w1, 0)
 
-    green = (0, 255, 0)
-    red = (0, 0, 255)
-    white = (255, 255, 255)
-    yellow = (255, 255, 0)
     kp_color = (51, 103, 236)
     for (x1, y1), (x2, y2), inlier in zip(p1, p2, status):
         if inlier:
