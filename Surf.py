@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
 '''
-Uses SURF to match two images. Count the match area.
+Uses SURF to match two images in each file. And count the matching area.
 
 Based on the sample code from opencv:
   samples/python2/find_obj.py
 
 USAGE
-  find_obj.py <image1> <image2>
+  Surf.py <image1>
 '''
 
 import numpy
 import cv2
-
+import os
 import sys
 
 ###############################################################################
@@ -74,14 +74,16 @@ def explore_match(win, img1, img2, kp_pairs, status = None, H = None):
     vis[:h1, :w1] = img1
     vis[:h2, w1:w1+w2] = img2
     vis = cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR)
-    
+    area_percentage = 0.0
     if H is not None:
 	corners = numpy.float32([[0, 0], [w1, 0], [w1, h1], [0, h1]])
 	corners = numpy.int32( cv2.perspectiveTransform(corners.reshape(1, -1, 2), H).reshape(-1, 2) + (w1, 0) )
         cv2.polylines(vis, [corners], True, yellow)
-	print '%s' % corners
-	print '%s' % str(PolygonArea(corners))
-	print '%s' % str(PolygonArea(corners)/(h2*w2))
+	#print '%s' % corners
+	area = PolygonArea(corners)
+	#print 'Area: %s' % str(area) #matching area
+	area_percentage = area/(h2*w2)	
+	print 'Area Percentage: %s' % str(area_percentage) #matching area percentage
 	
     if status is None:
         status = numpy.ones(len(kp_pairs), numpy.bool_)
@@ -109,7 +111,7 @@ def explore_match(win, img1, img2, kp_pairs, status = None, H = None):
 
     cv2.imshow(win, vis)
 
-
+    return area_percentage
   
 def draw_matches(window_name, kp_pairs, img1, img2):
     """Draws the matches for """
@@ -126,40 +128,59 @@ def draw_matches(window_name, kp_pairs, img1, img2):
         #print '%d matches found, not enough for homography estimation' % len(p1)
     
     if len(p1):
-        explore_match(window_name, img1, img2, kp_pairs, status, H)
+        return explore_match(window_name, img1, img2, kp_pairs, status, H)
 
 ###############################################################################
 # Test Main
 ###############################################################################
 
 if __name__ == '__main__':
-    """Test code: Uses the two specified"""
-    if len(sys.argv) < 3:
-        print "No filenames specified"
-        print "USAGE: find_obj.py <image1> <image2>"
-        sys.exit(1)
-    
-    fn1 = sys.argv[1]
-    fn2 = sys.argv[2]
 
-    img1 = cv2.imread(fn1, 0)
-    img2 = cv2.imread(fn2, 0)
-    
-    if img1 is None:
-        print 'Failed to load fn1:', fn1
+    if len(sys.argv) < 2:
+        print "No filenames specified"
+        print "USAGE: Surf.py <image1>"
         sys.exit(1)
-        
+    
+    fn2 = sys.argv[1]
+    img2 = cv2.imread(fn2, 0)
     if img2 is None:
         print 'Failed to load fn2:', fn2
         sys.exit(1)
 
-    kp_pairs = match_images(img1, img2)
+    max_score = [1,0.0] #init:floder 1, MaxScore:0
+    score_sum = 0.0
+    buildings_num = 10
+    for i in range(buildings_num): 
+	    print '==== %s ====' % str(i+1)
+	    score_sum = 0.0
+	    for file_type in [str(i+1)]: #compare buildings in each files
+        	for img in os.listdir(file_type):
+			fn1 = str(i+1)+'/'+str(img)
+			#print 'fn1:',fn1
+    			img1 = cv2.imread(fn1, 0)
     
-    if kp_pairs:
-        draw_matches('find_obj', kp_pairs, img1, img2)
-        cv2.waitKey()
-        cv2.destroyAllWindows()    
-else:
-        print "No matches found"
+    			if img1 is None:
+        			print 'Failed to load fn1:', fn1
+        			sys.exit(1)
+
+    			kp_pairs = match_images(img1, img2)
     
-    
+    			if kp_pairs:
+        			area_per = draw_matches('find_obj', kp_pairs, img1, img2)
+				if area_per < 1:				
+					score_sum = score_sum + area_per
+        			#cv2.waitKey()
+        			cv2.destroyAllWindows()    
+			else:
+        			print "No matches found"
+		#print "========"
+		print 'sum: %f ' % score_sum
+		if score_sum > max_score[1]:
+			max_score[0] = i+1
+			max_score[1] = score_sum
+		print 'max_score: %d %f' % (max_score[0],max_score[1])
+    print "========================="    
+    print 'It is building No.%d.' % max_score[0]
+    print "========================="
+
+
