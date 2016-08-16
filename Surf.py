@@ -134,53 +134,57 @@ def draw_matches(window_name, kp_pairs, img1, img2):
 # Test Main
 ###############################################################################
 
-if __name__ == '__main__':
-
-    if len(sys.argv) < 2:
-        print "No filenames specified"
-        print "USAGE: Surf.py <image1>"
-        sys.exit(1)
-    
-    fn2 = sys.argv[1]
-    img2 = cv2.imread(fn2, 0)
-    if img2 is None:
-        print 'Failed to load fn2:', fn2
-        sys.exit(1)
-
-    max_score = [1,0.0] #init:floder 1, MaxScore:0
-    score_sum = 0.0
-    buildings_num = 10
-    for i in range(buildings_num): 
-	    print '==== %s ====' % str(i+1)
-	    score_sum = 0.0
-	    for file_type in [str(i+1)]: #compare buildings in each files
-        	for img in os.listdir(file_type):
-			fn1 = str(i+1)+'/'+str(img)
-			#print 'fn1:',fn1
-    			img1 = cv2.imread(fn1, 0)
-    
-    			if img1 is None:
-        			print 'Failed to load fn1:', fn1
-        			sys.exit(1)
-
-    			kp_pairs = match_images(img1, img2)
-    
-    			if kp_pairs:
-        			area_per = draw_matches('find_obj', kp_pairs, img1, img2)
-				if area_per < 1:				
-					score_sum = score_sum + area_per
-        			#cv2.waitKey()
-        			cv2.destroyAllWindows()    
-			else:
-        			print "No matches found"
-		#print "========"
-		print 'sum: %f ' % score_sum
-		if score_sum > max_score[1]:
-			max_score[0] = i+1
-			max_score[1] = score_sum
-		print 'max_score: %d %f' % (max_score[0],max_score[1])
-    print "========================="    
-    print 'It is building No.%d.' % max_score[0]
-    print "========================="
-
+if __name__ == '__main__':    
+	for files in ["training"]: #training image
+		print '==dd'
+		for imgt in os.listdir(files):
+			fn2 = "training" + '/' +str(imgt)
+	    		img2 = cv2.imread(fn2, 0)
+	    		if img2 is None:
+	        		print 'Failed to load fn2:', fn2
+	        		sys.exit(1)
+			outputtext = ""
+			for k in range(9):
+				if '0'+str(k+1) in str(imgt):
+					outputtext = outputtext + str(k+1)
+					break
+			if '10' in str(imgt):
+				outputtext = outputtext + '10'
+			max_score = [1,0.0] #init:floder 1, MaxScore:0
+	    		score_sum = 0.0
+	    		buildings_num = 10
+	    		imgnum = 1
+	    		#outputtext = outputtext + "1"
+	    		for i in range(buildings_num):	    
+		    		print '==== %s ====' % str(i+1)
+		    		score_sum = 0.0
+		    		for file_type in [str(i+1)]: #compare buildings in each files
+			        	
+					for img in os.listdir(file_type):	
+						fn1 = str(i+1)+'/'+str(img)
+						#print 'fn1:',fn1
+	    					img1 = cv2.imread(fn1, 0)
+	    
+	    					if img1 is None:
+	        					print 'Failed to load fn1:', fn1
+	        					sys.exit(1)
+	
+	    					kp_pairs = match_images(img1, img2)
+	    
+	    					if kp_pairs:
+	        					area_per = draw_matches('find_obj', kp_pairs, img1, img2)
+							if area_per < 1:				
+								score_sum = score_sum + area_per
+								outputtext = outputtext + " %d:%f" % (imgnum,area_per)
+								imgnum = imgnum + 1
+	        					#cv2.waitKey()
+	        					cv2.destroyAllWindows()    
+						else:
+	        					print "No matches found"
+							outputtext = outputtext + " %d:0.0" % (imgnum)
+							imgnum = imgnum + 1
+			outputtext = outputtext + '\n'
+			with open('traindata','a') as f:
+				f.write(outputtext) 
+	
 
